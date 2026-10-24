@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>External Panel</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body {
+    background:#05070a;
+    font-family:'Segoe UI',system-ui,sans-serif;
+    display:flex; justify-content:center; align-items:center;
+    min-height:100vh; overflow-y:auto; padding:20px 0;
+    color:#e6edf3;
+  }
+  .panel {
+    width:300px;
+    background:linear-gradient(145deg,#0d1117,#070a0f);
+    border:1px solid #1f2937;
+    border-radius:18px;
+    padding:18px;
+    box-shadow:0 0 0 1px #0a0e14, 0 18px 50px rgba(0,0,0,.8), 0 0 60px rgba(0,200,255,.06);
+    position:relative;
+    user-select:none;
+  }
+  .panel::before {
+    content:'';
+    position:absolute; inset:0;
+    border-radius:18px;
+    padding:1px;
+    background:linear-gradient(135deg,rgba(0,200,255,.4),transparent 40%,transparent 60%,rgba(0,255,170,.3));
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor; mask-composite:exclude;
+    pointer-events:none;
+  }
+  .header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding-bottom:14px; margin-bottom:14px;
+    border-bottom:1px solid #161b22;
+  }
+  .title {
+    font-size:13px; font-weight:700; letter-spacing:2px;
+    color:#00d4ff; text-shadow:0 0 12px rgba(0,212,255,.5);
+    display:flex; align-items:center; gap:8px;
+  }
+  .dot {
+    width:7px; height:7px; border-radius:50%;
+    background:#00ff9d;
+    box-shadow:0 0 10px #00ff9d;
+    animation:pulse 1.6s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.35;} }
+  .ver { font-size:9px; color:#4b5563; letter-spacing:1px; }
+
+  .row {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:11px 12px;
+    background:#0a0e14;
+    border:1px solid #161b22;
+    border-radius:11px;
+    margin-bottom:9px;
+    transition:.2s;
+  }
+  .row.on {
+    border-color:rgba(0,212,255,.45);
+    background:linear-gradient(90deg,rgba(0,212,255,.08),#0a0e14);
+    box-shadow:0 0 18px rgba(0,212,255,.12) inset;
+  }
+  .label { font-size:12.5px; font-weight:600; letter-spacing:.5px; color:#9ca3af; transition:.2s; }
+  .row.on .label { color:#e6edf3; }
+  .sub { font-size:9px; color:#374151; letter-spacing:.5px; margin-top:2px; }
+  .row.on .sub { color:#00d4ff; }
+
+  .toggle {
+    width:44px; height:24px; border-radius:24px;
+    background:#1f2937; position:relative; cursor:pointer;
+    transition:.25s; flex-shrink:0;
+  }
+  .toggle::after {
+    content:''; position:absolute; top:3px; left:3px;
+    width:18px; height:18px; border-radius:50%;
+    background:#6b7280; transition:.25s;
+  }
+  .row.on .toggle { background:rgba(0,212,255,.25); box-shadow:0 0 12px rgba(0,212,255,.4); }
+  .row.on .toggle::after {
+    left:23px; background:#00d4ff;
+    box-shadow:0 0 10px #00d4ff;
+  }
+
+  .slider-box { padding:0 4px; }
+  .slider-val { font-size:11px; color:#00d4ff; font-weight:700; }
+  input[type=range] {
+    -webkit-appearance:none; width:100%; height:4px;
+    background:#1f2937; border-radius:4px; outline:none; margin-top:8px;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance:none; width:16px; height:16px; border-radius:50%;
+    background:#00d4ff; cursor:pointer;
+    box-shadow:0 0 12px rgba(0,212,255,.7);
+  }
+  input[type=range]::-moz-range-thumb {
+    width:16px; height:16px; border-radius:50%; border:none;
+    background:#00d4ff; box-shadow:0 0 12px rgba(0,212,255,.7);
+  }
+
+  .select-wrap { position:relative; }
+  select {
+    background:#0a0e14; color:#00d4ff; border:1px solid #1f2937;
+    border-radius:8px; padding:5px 22px 5px 9px; font-size:10.5px;
+    font-weight:600; outline:none; cursor:pointer;
+    -webkit-appearance:none; appearance:none;
+  }
+
+  .inject {
+    width:100%; margin-top:6px; padding:14px;
+    border:none; border-radius:12px; cursor:pointer;
+    font-size:13px; font-weight:800; letter-spacing:2.5px;
+    color:#021014;
+    background:linear-gradient(135deg,#00ff9d,#00d4ff);
+    box-shadow:0 0 24px rgba(0,212,255,.35), 0 6px 20px rgba(0,0,0,.6);
+    transition:.18s; text-transform:uppercase;
+  }
+  .inject:active { transform:scale(.97); box-shadow:0 0 40px rgba(0,255,157,.6); }
+  .inject.loading { background:linear-gradient(135deg,#0a0e14,#0a0e14); color:#00d4ff; border:1px solid #00d4ff; }
+
+  .footer {
+    text-align:center; font-size:9px; color:#374151;
+    letter-spacing:1px; margin-top:12px;
+  }
+  .footer span { color:#00ff9d; }
+</style>
+</head>
+<body>
+<div class="panel">
+  <div class="header">
+    <div class="title"><span class="dot"></span>EXTERNAL PANEL</div>
+    <div class="ver">v2.5</div>
+  </div>
+
+  <div class="row" id="row-aimbot">
+    <div>
+      <div class="label">Aimbot</div>
+      <div class="sub">auto target lock</div>
+    </div>
+    <div class="toggle"></div>
+  </div>
+
+  <div class="row" id="row-alert">
+    <div>
+      <div class="label">Alert</div>
+      <div class="sub">enemy notifier</div>
+    </div>
+    <div class="toggle"></div>
+  </div>
+
+  <div class="row" id="row-precision">
+    <div>
+      <div class="label">Precision</div>
+      <div class="sub">hit smoothing</div>
+    </div>
+    <div class="select-wrap">
+      <select id="precisionSel">
+        <option value="low">LOW</option>
+        <option value="med" selected>MED</option>
+        <option value="high">HIGH</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row" id="row-bypass">
+    <div>
+      <div class="label">Bypass</div>
+      <div class="sub">anti-detection</div>
+    </div>
+    <div class="toggle"></div>
+  </div>
+
+  <div class="row" id="row-recoil" style="display:block;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div class="label">Recoil</div>
+        <div class="sub">recoil compensation</div>
+      </div>
+      <div class="slider-val" id="recoilVal">50%</div>
+    </div>
+    <div class="slider-box">
+      <input type="range" id="recoilRange" min="0" max="100" value="50">
+    </div>
+  </div>
+
+  <div class="row" id="row-fov" style="display:block;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div class="label">FOV</div>
+        <div class="sub">field of view radius</div>
+      </div>
+      <div class="slider-val" id="fovVal">120</div>
+    </div>
+    <div class="slider-box">
+      <input type="range" id="fovRange" min="30" max="360" value="120">
+    </div>
+  </div>
+
+  <button class="inject" id="injectBtn">INJECT</button>
+
+  <div class="footer">STATUS: <span id="status">STANDBY</span></div>
+</div>
+
+<script>
+  const state = {
+    aimbot:false, alert:false, precision:'med',
+    bypass:false, recoil:50, fov:120, injected:false
+  };
+
+  ['aimbot','alert','bypass'].forEach(key => {
+    const row = document.getElementById('row-'+key);
+    row.addEventListener('click', () => {
+      state[key] = !state[key];
+      row.classList.toggle('on', state[key]);
+    });
+  });
+
+  const pSel = document.getElementById('precisionSel');
+  pSel.addEventListener('change', e => {
+    state.precision = e.target.value;
+  });
+  document.getElementById('row-precision').classList.add('on');
+
+  const recoilRange = document.getElementById('recoilRange');
+  const recoilVal = document.getElementById('recoilVal');
+  recoilRange.addEventListener('input', e => {
+    state.recoil = +e.target.value;
+    recoilVal.textContent = state.recoil + '%';
+    document.getElementById('row-recoil').classList.add('on');
+  });
+
+  const fovRange = document.getElementById('fovRange');
+  const fovVal = document.getElementById('fovVal');
+  fovRange.addEventListener('input', e => {
+    state.fov = +e.target.value;
+    fovVal.textContent = state.fov;
+    document.getElementById('row-fov').classList.add('on');
+  });
+
+  const btn = document.getElementById('injectBtn');
+  const status = document.getElementById('status');
+  btn.addEventListener('click', () => {
+    if (state.injected) {
+      state.injected = false;
+      btn.textContent = 'INJECT';
+      btn.classList.remove('loading');
+      status.textContent = 'STANDBY';
+      status.style.color = '#00ff9d';
+      return;
+    }
+    btn.classList.add('loading');
+    btn.textContent = 'INJECTING...';
+    status.textContent = 'LOADING';
+    status.style.color = '#ffb800';
+    let pct = 0;
+    const iv = setInterval(() => {
+      pct += Math.random()*22;
+      if (pct >= 100) {
+        pct = 100;
+        clearInterval(iv);
+        state.injected = true;
+        btn.classList.remove('loading');
+        btn.textContent = 'EJECT';
+        status.textContent = 'INJECTED';
+        status.style.color = '#00d4ff';
+      }
+    }, 140);
+  });
+</script>
+</body>
+</html>
